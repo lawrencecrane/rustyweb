@@ -1,5 +1,5 @@
 use std::net::{TcpListener, TcpStream};
-use std::io::{Write, BufReader, BufRead, Error, ErrorKind};
+use std::io::{Write, BufWriter, BufReader, BufRead, Error, ErrorKind};
 
 mod http_response;
 
@@ -21,15 +21,18 @@ fn connect(stream: Result<TcpStream, Error>) {
     };
 }
 
-fn respond(mut stream: &TcpStream, request: Vec<String>) -> Result<usize, Error> {
+fn respond(stream: &TcpStream, request: Vec<String>) -> Result<usize, Error> {
     println!("{:?}", request);
 
-    stream.write_vectored(&http_response::ok("Hello from the otherside"))
+    let mut writer = BufWriter::new(stream);
+    writer.write_vectored(&http_response::ok("Hello from the otherside"))
 }
 
 fn inquire(stream: &TcpStream) -> Result<Vec<String>, Error> {
     let reader = BufReader::new(stream);
 
+    // TODO: parse first line to determine request type, route and version
+    // and based on that process rest of data
     let req: Vec<String> = reader.lines()
         .map(|line| line.unwrap_or(String::new()))
         .take_while(|line| !line.is_empty())
