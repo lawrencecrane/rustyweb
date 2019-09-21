@@ -1,6 +1,5 @@
 use std::net::{TcpListener, TcpStream};
-use std::io::{Write, BufReader, BufRead, Error};
-use std::time::Duration;
+use std::io::{Write, BufReader, BufRead, Error, ErrorKind};
 
 mod http_response;
 
@@ -15,35 +14,29 @@ pub fn serve(host: &str, port: isize) {
 fn connect(stream: Result<TcpStream, Error>) {
     match stream {
         Ok(stream) => {
-            inquire(&stream).and_then(|_| respond(&stream))
+            inquire(&stream).and_then(|request| respond(&stream, request))
                 .unwrap_or_default();
         },
         Err(_) => {}
     };
 }
 
-fn respond(mut stream: &TcpStream) -> Result<usize, Error> {
-    stream.set_write_timeout(Some(Duration::new(2, 0)))
-        .unwrap();
+fn respond(mut stream: &TcpStream, request: Vec<String>) -> Result<usize, Error> {
+    println!("{:?}", request);
 
     stream.write_vectored(&http_response::ok("Hello from the otherside"))
 }
 
 fn inquire(stream: &TcpStream) -> Result<Vec<String>, Error> {
-    stream.set_read_timeout(Some(Duration::new(2, 0)))
-        .unwrap();
-
     let reader = BufReader::new(stream);
 
-    reader.split('\n' as u8)
-        .take_while(|x| x.as_ref().unwrap_or(&Vec::new()).len() > 1)
-        .map(parse_request)
-        .collect()
-}
+    let req: Vec<String> = reader.lines()
+        .map(|line| line.unwrap_or(String::new()))
+        .take_while(|line| !line.is_empty())
+        .collect();
 
-fn parse_request(xs: Result<Vec<u8>, Error>) -> Result<String, Error> {
-    match xs {
-        Ok(line) => Ok(String::from_utf8(line).unwrap()),
-        Err(e) => Err(e)
+    match req.len() {
+        0 => Err(Error::new(ErrorKind::InvalidData, "Empty request")),
+        _ => Ok(req)
     }
 }
