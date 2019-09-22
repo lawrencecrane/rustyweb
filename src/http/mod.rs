@@ -51,18 +51,24 @@ pub mod request {
 
     #[derive(Debug)]
     pub struct RequestLine {
-        pub method: Method,
-        pub uri: String,
-        pub version: String
+        method: Method,
+        uri: String,
+        version: String
     }
 
     impl Request {
-        pub fn request_line(&self) -> &RequestLine {
-            &self.request_line
+        pub fn get_method_and_uri(&self) -> (&Method, &str) {
+            self.request_line.get_method_and_uri()
         }
 
         pub fn request(&self) -> &Vec<String> {
             &self.request
+        }
+    }
+
+    impl RequestLine {
+        fn get_method_and_uri(&self) -> (&Method, &str) {
+            (&self.method, self.uri.as_ref())
         }
     }
 
