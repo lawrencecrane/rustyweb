@@ -30,13 +30,34 @@ pub mod request {
     use std::net::TcpStream;
     use std::io::{Read, BufReader, BufRead, Error, ErrorKind};
 
+    #[derive(Debug)]
+    pub enum Method {
+        GET,
+        // HEAD,
+        // POST,
+        // PUT,
+        // DELETE,
+        // CORRECT,
+        // OPTIONS,
+        // TRACE,
+        // PATCH
+    }
+
+    #[derive(Debug)]
     pub struct Request {
-        request_line: String,
+        request_line: RequestLine,
         request: Vec<String>
     }
 
+    #[derive(Debug)]
+    pub struct RequestLine {
+        pub method: Method,
+        pub uri: String,
+        pub version: String
+    }
+
     impl Request {
-        pub fn request_line(&self) -> &String {
+        pub fn request_line(&self) -> &RequestLine {
             &self.request_line
         }
 
@@ -51,12 +72,18 @@ pub mod request {
 
         match request_line {
             Ok(req) => {
-                // TODO: deduce from req which method to parse
-
-                Ok(Request {
-                    request_line: req,
-                    request: parse_get_request(reader)
-                })
+                match parse_request_line(req) {
+                    Ok(parsed) => {
+                        Ok(Request {
+                            request_line: parsed,
+                            // TODO: implement parser for other request methods
+                            request: parse_get_request(reader)
+                        })
+                    },
+                    Err(e) => {
+                        Err(e)
+                    }
+                }
             },
             Err(_) => {
                 Err(Error::new(ErrorKind::InvalidData, "Empty request"))
@@ -69,5 +96,37 @@ pub mod request {
             .map(|line| line.unwrap_or(String::new()))
             .take_while(|line| !line.is_empty())
             .collect()
+    }
+
+    fn parse_request_line(line: String) -> Result<RequestLine, Error> {
+        let splitted: Vec<&str> = line.split_whitespace()
+            .collect();
+
+        match splitted.len() {
+            3 => {
+                match parse_method(splitted[0]) {
+                    Some(method) => {
+                        Ok(RequestLine {
+                            method: method,
+                            uri: splitted[1].to_string(),
+                            version: splitted[2].to_string()
+                        })
+                    },
+                    None => {
+                        Err(Error::new(ErrorKind::InvalidData, "Not valid method"))
+                    }
+                }
+            },
+            _ => {
+                Err(Error::new(ErrorKind::InvalidData, "Not valid request line"))
+            }
+        }
+    }
+
+    fn parse_method(x: &str) -> Option<Method> {
+        match x {
+            "GET" => Some(Method::GET),
+            _ => None
+        }
     }
 }

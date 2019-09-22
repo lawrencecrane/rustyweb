@@ -1,5 +1,5 @@
 use std::net::{TcpListener, TcpStream};
-use std::io::{Write, BufWriter, BufReader, Error};
+use std::io::{Write, BufWriter, BufReader, Error, ErrorKind};
 
 mod http;
 
@@ -22,16 +22,23 @@ fn connect(stream: Result<TcpStream, Error>) {
 }
 
 fn respond(stream: &TcpStream, request: http::request::Request) -> Result<usize, Error> {
-    println!("{:?}", request.request_line());
-    println!("{:?}", request.request());
+    match (&request.request_line().method, request.request_line().uri.as_ref()) {
+        (http::request::Method::GET, "/") => {
+            get_root(stream)
+        },
+        _ => {
+            Err(Error::new(ErrorKind::NotFound, "404"))
+        }
+    }
+}
 
+fn get_root(stream: &TcpStream) -> Result<usize, Error> {
     let mut responder = BufWriter::new(stream);
 
-    responder.write(
-        &http::response::ok("Hello from the otherside",
-                            vec!["Content-Type: text/html; charset=utf-8".to_string()])
-            .to_bytes()
-    )
+    responder.write(&http::response::ok(
+        "Hello from the otherside",
+        vec!["Content-Type: text/html; charset=utf-8".to_string()]
+    ).to_bytes())
 }
 
 fn inquire(stream: &TcpStream) -> Result<http::request::Request, Error> {
