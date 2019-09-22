@@ -5,7 +5,7 @@ use std::io::{Error, ErrorKind};
 use rustyweb::http::request::{Request, Method};
 
 fn main() {
-    rustyweb::serve("0.0.0.0", 80, respond)
+    rustyweb::serve("0.0.0.0", 8080, respond)
 }
 
 fn respond(stream: &TcpStream, request: Request) -> Result<(), Error> {

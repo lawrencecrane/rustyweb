@@ -73,7 +73,6 @@ pub mod request {
     }
 
     pub fn parse(mut reader: BufReader<&TcpStream>) -> Result<Request, Error> {
-
         let request_line: Result<String, Error> = reader.by_ref().lines().take(1).collect();
 
         match request_line {
