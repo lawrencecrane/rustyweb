@@ -10,11 +10,11 @@ pub mod response {
         }
     }
 
-    pub fn ok(msg: &str, mut header: Vec<String>) -> Response {
-        header.insert(0, "HTTP/1.1 200 OK".to_string());
+    pub fn ok(msg: &str, mut headers: Vec<String>) -> Response {
+        headers.insert(0, "HTTP/1.1 200 OK".to_string());
 
         Response {
-            headers: header.join("\n").as_bytes().to_vec(),
+            headers: headers.join("\n").as_bytes().to_vec(),
             body: format!("\n\n{}", msg).as_bytes().to_vec()
         }
     }

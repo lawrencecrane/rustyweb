@@ -6,13 +6,10 @@ pub mod http;
 
 type ResponderType = fn(&TcpStream, http::request::Request) -> Result<(), Error>;
 
-pub fn respond(stream: &TcpStream, msg: &str) -> Result<(), Error> {
+pub fn respond(stream: &TcpStream, msg: &str, headers: Vec<String>) -> Result<(), Error> {
     let mut responder = BufWriter::new(stream);
 
-    match responder.write(&http::response::ok(
-        msg,
-        vec!["Content-Type: text/html; charset=utf-8".to_string()]
-    ).to_bytes()) {
+    match responder.write(&http::response::ok(msg, headers).to_bytes()) {
         Ok(_) => Ok(()),
         Err(e) => Err(e)
     }
