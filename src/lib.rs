@@ -1,5 +1,6 @@
 use std::net::{TcpListener, TcpStream};
 use std::io::{Write, BufWriter, BufReader, Error};
+use std::thread;
 
 pub mod http;
 
@@ -21,7 +22,9 @@ pub fn serve(host: &str, port: isize, responder: ResponderType) {
     let listener = TcpListener::bind([host, ":", &port.to_string()].concat()).unwrap();
 
     for stream in listener.incoming() {
-        connect(stream, responder);
+        thread::spawn(move || {
+            connect(stream, responder);
+        });
     }
 }
 
