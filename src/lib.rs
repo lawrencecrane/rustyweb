@@ -1,7 +1,7 @@
 use std::net::{TcpListener, TcpStream};
-use std::io::{Write, BufWriter, BufReader, BufRead, Error, ErrorKind};
+use std::io::{Write, BufWriter, BufReader, Error};
 
-mod http_response;
+mod http;
 
 pub fn serve(host: &str, port: isize) {
     let listener = TcpListener::bind([host, ":", &port.to_string()].concat()).unwrap();
@@ -21,25 +21,21 @@ fn connect(stream: Result<TcpStream, Error>) {
     };
 }
 
-fn respond(stream: &TcpStream, request: Vec<String>) -> Result<usize, Error> {
-    println!("{:?}", request);
+fn respond(stream: &TcpStream, request: http::request::Request) -> Result<usize, Error> {
+    println!("{:?}", request.request_line());
+    println!("{:?}", request.request());
 
-    let mut writer = BufWriter::new(stream);
-    writer.write_vectored(&http_response::ok("Hello from the otherside"))
+    let mut responder = BufWriter::new(stream);
+
+    responder.write(
+        &http::response::ok("Hello from the otherside",
+                            vec!["Content-Type: text/html; charset=utf-8".to_string()])
+            .to_bytes()
+    )
 }
 
-fn inquire(stream: &TcpStream) -> Result<Vec<String>, Error> {
-    let reader = BufReader::new(stream);
+fn inquire(stream: &TcpStream) -> Result<http::request::Request, Error> {
+    let inquirer = BufReader::new(stream);
 
-    // TODO: parse first line to determine request type, route and version
-    // and based on that process rest of data
-    let req: Vec<String> = reader.lines()
-        .map(|line| line.unwrap_or(String::new()))
-        .take_while(|line| !line.is_empty())
-        .collect();
-
-    match req.len() {
-        0 => Err(Error::new(ErrorKind::InvalidData, "Empty request")),
-        _ => Ok(req)
-    }
+    http::request::parse(inquirer)
 }
