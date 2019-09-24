@@ -1,0 +1,8 @@
+[package]
+name = "rustywebapp"
+version = "0.1.0"
+authors = ["Lauri Kurki <lauri.kurki@siili.com>"]
+edition = "2018"
+
+[dependencies]
+rustyweb = { path = "../lib" }

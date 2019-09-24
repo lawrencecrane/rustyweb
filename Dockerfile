@@ -3,9 +3,10 @@ FROM rust:alpine as builder
 
 WORKDIR /home/rustyweb
 
-COPY Cargo.toml .
-COPY Cargo.lock .
-COPY src ./src/
+COPY lib ./lib/
+COPY app ./app/
+
+WORKDIR /home/rustyweb/app
 
 RUN cargo build --release
 
@@ -24,6 +25,6 @@ WORKDIR /opt/rustyweb
 
 ENV PATH "/opt/rustyweb:$PATH"
 
-COPY --from=builder /home/rustyweb/target/release/rustyweb .
+COPY --from=builder /home/rustyweb/app/target/release/rustywebapp .
 
-CMD ["rustyweb"]
+CMD ["rustywebapp"]
