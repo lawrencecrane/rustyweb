@@ -11,6 +11,7 @@ pub mod request {
             Ok(req) => {
                 match parse_request_line(req) {
                     Ok(parsed) => Ok(request::Request::new(parsed,
+                                                           // TODO: parse these to dict/map
                                                            parse_get(reader))),
                     Err(e) => Err(e)
                 }

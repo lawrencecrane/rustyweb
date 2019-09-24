@@ -43,6 +43,8 @@ pub mod request {
     #[derive(Debug)]
     pub struct Request {
         request_line: RequestLine,
+        // TODO: this should have headers which is map/dict
+        // and body/data which is Option<String>
         request: Vec<String>
     }
 

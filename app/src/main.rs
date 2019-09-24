@@ -15,6 +15,7 @@ fn respond(stream: &TcpStream, request: Request) -> Result<(), Error> {
 
     match request.get_method_and_uri() {
         (Method::GET, "/") =>
+            // TODO: caclulate the number of bytes in file and add content-length header
             web::server::respond(stream,
                                  include_str!("../client/dist/index.html"),
                                  headers),
