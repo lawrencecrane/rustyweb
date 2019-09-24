@@ -1,3 +1,16 @@
+#== Image to build client assets ==#
+FROM node:lts-slim as client-builder
+
+WORKDIR /home/client
+
+COPY app/client/package.json .
+
+RUN npm install
+
+COPY app/client ./
+
+RUN  npm run build
+
 #== Image to build application ==#
 FROM rust:alpine as builder
 
@@ -5,6 +18,7 @@ WORKDIR /home/rustyweb
 
 COPY lib ./lib/
 COPY app ./app/
+COPY --from=client-builder /home/client/dist ./app/client/dist/
 
 WORKDIR /home/rustyweb/app
 

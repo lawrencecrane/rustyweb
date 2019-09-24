@@ -1,0 +1,22 @@
+{
+  "name": "rustywebclient",
+  "version": "1.0.0",
+  "description": "client code for rustywebapp",
+  "main": "webpack.config.js",
+  "scripts": {
+    "build": "webpack"
+  },
+  "author": "Lauri Kurki",
+  "license": "ISC",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "@babel/core": "^7.5.5",
+    "@babel/plugin-proposal-object-rest-spread": "^7.5.5",
+    "@babel/preset-env": "^7.5.5",
+    "babel-loader": "^8.0.6",
+    "terser-webpack-plugin": "^1.4.1",
+    "webpack": "^4.39.3",
+    "webpack-cli": "^3.3.7"
+  }
+}
