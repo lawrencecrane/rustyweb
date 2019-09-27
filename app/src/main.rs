@@ -13,12 +13,16 @@ fn main() {
 fn respond(stream: &TcpStream, request: Request) -> Result<(), Error> {
     let headers = vec!["Content-Type: text/html; charset=utf-8".to_string()];
 
-    match request.get_method_and_uri() {
-        (Method::GET, "/") =>
+    match (request.is_websocket_upgrade(), request.get_method_and_uri()) {
+        (true, (Method::GET, "/")) => {
+            println!("Got websocket!");
+            Err(Error::new(ErrorKind::NotFound, "404"))
+        },
+        (false, (Method::GET, "/")) =>
             web::server::respond(stream,
                                  include_str!("../client/dist/index.html"),
                                  headers),
-        (Method::GET, "/bundle.js") =>
+        (false, (Method::GET, "/bundle.js")) =>
             web::server::respond(stream,
                                  include_str!("../client/dist/bundle.js"),
                                  headers),

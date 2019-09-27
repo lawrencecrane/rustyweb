@@ -76,6 +76,13 @@ pub mod request {
         pub fn headers(&self) -> &HashMap<String, String> {
             &self.headers
         }
+
+        pub fn is_websocket_upgrade(&self) -> bool {
+            match (self.headers.get("Connection"), self.headers.get("Upgrade")) {
+                (Some(con), Some(upg)) => con == "Upgrade" && upg == "websocket",
+                (_, _) => false
+            }
+        }
     }
 
     impl RequestLine {
