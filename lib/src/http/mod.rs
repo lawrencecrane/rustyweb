@@ -11,11 +11,14 @@ pub mod response {
     }
 
     pub fn ok(msg: &str, mut headers: Vec<String>) -> Response {
+        let body = msg.as_bytes();
+
         headers.insert(0, "HTTP/1.1 200 OK".to_string());
+        headers.push(format!("Content-Length: {}\n\n", body.len()));
 
         Response {
             headers: headers.join("\n").as_bytes().to_vec(),
-            body: format!("\n\n{}", msg).as_bytes().to_vec()
+            body: body.to_vec()
         }
     }
 }
