@@ -26,6 +26,7 @@ pub mod request {
     // Headers
     // An empty line
     // Optional HTTP message body data
+    use std::collections::HashMap;
 
     #[derive(Debug)]
     pub enum Method {
@@ -42,10 +43,9 @@ pub mod request {
 
     #[derive(Debug)]
     pub struct Request {
-        request_line: RequestLine,
-        // TODO: this should have headers which is map/dict
-        // and body/data which is Option<String>
-        request: Vec<String>
+        request: RequestLine,
+        headers: HashMap<String, String>,
+        data: Option<String>
     }
 
     #[derive(Debug)]
@@ -56,19 +56,22 @@ pub mod request {
     }
 
     impl Request {
-        pub fn new(request_line: RequestLine, request: Vec<String>) -> Request {
+        pub fn new(request: RequestLine,
+                   headers: HashMap<String, String>,
+                   data: Option<String>) -> Request {
             Request {
-                request_line: request_line,
-                request: request
+                request: request,
+                headers: headers,
+                data: data
             }
         }
 
         pub fn get_method_and_uri(&self) -> (&Method, &str) {
-            self.request_line.get_method_and_uri()
+            self.request.get_method_and_uri()
         }
 
-        pub fn request(&self) -> &Vec<String> {
-            &self.request
+        pub fn headers(&self) -> &HashMap<String, String> {
+            &self.headers
         }
     }
 
