@@ -86,14 +86,14 @@ pub mod request {
         }
 
         pub fn is_websocket_upgrade(&self) -> bool {
-            match (self.headers.get("Connection"), self.headers.get("Upgrade")) {
-                (Some(con), Some(upg)) => con == "Upgrade" && upg == "websocket",
+            match (self.headers.get("connection"), self.headers.get("upgrade")) {
+                (Some(con), Some(upg)) => con == "upgrade" && upg == "websocket",
                 (_, _) => false
             }
         }
 
         pub fn generate_websocket_accept_value(&self) -> Option<String> {
-            match self.headers.get("Sec-WebSocket-Key") {
+            match self.headers.get("sec-websocket-key") {
                 Some(val) => {
                     let mut hasher = Sha1::new();
                     hasher.input_str(&format!("{}{}", val, WEBSOCKET_GUID).to_string());
@@ -129,7 +129,7 @@ pub mod request {
         #[test]
         fn test_generate_websocket_accept_value_ok() {
             let mut headers = HashMap::new();
-            headers.insert("Sec-WebSocket-Key".to_string(),
+            headers.insert("sec-websocket-key".to_string(),
                            "dGhlIHNhbXBsZSBub25jZQ==".to_string());
 
             let request = Request::new(RequestLine::new(Method::GET,

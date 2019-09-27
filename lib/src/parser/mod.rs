@@ -72,7 +72,8 @@ pub mod request {
             Some(idx) => {
                 let (key, val) = header.split_at(idx);
 
-                Some((key.trim().to_string(), val.replacen(":", "", 1).trim().to_string()))
+                Some((key.trim().to_lowercase().to_string(),
+                      val.replacen(":", "", 1).trim().to_lowercase().to_string()))
             },
             None => None
         }
@@ -91,12 +92,12 @@ pub mod request {
         #[test]
         fn test_to_headers() {
             let mut generated = HashMap::new();
-            generated.insert("Host".to_string(), "localhost:8080".to_string());
-            generated.insert("Connection".to_string(), "keep-alive".to_string());
-            generated.insert("Cache-Control".to_string(), "max-age=0".to_string());
-            generated.insert("Accept".to_string(),
+            generated.insert("host".to_string(), "localhost:8080".to_string());
+            generated.insert("connection".to_string(), "keep-alive".to_string());
+            generated.insert("cache-control".to_string(), "max-age=0".to_string());
+            generated.insert("accept".to_string(),
                              "text/html,application/xhtml+xml,application/xml;".to_string());
-            generated.insert("Accept-Encoding".to_string(), "gzip, deflate, br".to_string());
+            generated.insert("accept-encoding".to_string(), "gzip, deflate, br".to_string());
 
             let parsed = to_headers(HEADERS.iter().map(|x| x.to_string()).collect());
 
