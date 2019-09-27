@@ -16,6 +16,7 @@ fn respond(stream: &TcpStream, request: Request) -> Result<(), Error> {
     match (request.is_websocket_upgrade(), request.get_method_and_uri()) {
         (true, (Method::GET, "/")) => {
             println!("Got websocket!");
+            println!("{}", request.generate_websocket_accept_value().unwrap());
             Err(Error::new(ErrorKind::NotFound, "404"))
         },
         (false, (Method::GET, "/")) =>

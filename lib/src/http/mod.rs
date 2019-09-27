@@ -29,7 +29,15 @@ pub mod request {
     // Headers
     // An empty line
     // Optional HTTP message body data
+    extern crate base64;
+    extern crate crypto;
+
     use std::collections::HashMap;
+    use crypto::digest::Digest;
+    use crypto::sha1::Sha1;
+    use base64::encode;
+
+    const WEBSOCKET_GUID: &str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
     #[derive(Debug)]
     pub enum Method {
@@ -83,6 +91,21 @@ pub mod request {
                 (_, _) => false
             }
         }
+
+        pub fn generate_websocket_accept_value(&self) -> Option<String> {
+            match self.headers.get("Sec-WebSocket-Key") {
+                Some(val) => {
+                    let mut hasher = Sha1::new();
+                    hasher.input_str(&format!("{}{}", val, WEBSOCKET_GUID).to_string());
+
+                    let mut hash = vec![0; hasher.output_bytes()];
+                    hasher.result(&mut hash);
+
+                    Some(encode(&hash))
+                },
+                None => None
+            }
+        }
     }
 
     impl RequestLine {
@@ -96,6 +119,40 @@ pub mod request {
 
         fn get_method_and_uri(&self) -> (&Method, &str) {
             (&self.method, self.uri.as_ref())
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn test_generate_websocket_accept_value_ok() {
+            let mut headers = HashMap::new();
+            headers.insert("Sec-WebSocket-Key".to_string(),
+                           "dGhlIHNhbXBsZSBub25jZQ==".to_string());
+
+            let request = Request::new(RequestLine::new(Method::GET,
+                                                        "/".to_string(),
+                                                        "".to_string()),
+                                       headers,
+                                       None);
+
+            assert_eq!(request.generate_websocket_accept_value().unwrap(),
+                       "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=")
+        }
+
+        #[test]
+        fn test_generate_websocket_accept_value_bad() {
+            let mut headers = HashMap::new();
+
+            let request = Request::new(RequestLine::new(Method::GET,
+                                                        "/".to_string(),
+                                                        "".to_string()),
+                                       headers,
+                                       None);
+
+            assert_eq!(request.generate_websocket_accept_value().is_none(), true)
         }
     }
 }
