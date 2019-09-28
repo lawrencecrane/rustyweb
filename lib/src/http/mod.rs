@@ -23,20 +23,34 @@ pub mod websocket {
         is_final_frame: bool,
         pub opcode: Opcode,
         pub is_masked: bool,
-        pub payload_length: u8
+        pub payload_length: usize
     }
 
     impl Header {
         pub fn new(is_final_frame: bool,
                    opcode: Opcode,
                    is_masked: bool,
-                   payload_length: u8) -> Header {
+                   payload_length: usize) -> Header {
             Header {
                 is_final_frame: is_final_frame,
                 opcode: opcode,
                 is_masked: is_masked,
                 payload_length: payload_length
             }
+        }
+    }
+
+    pub fn unmask_payload(payload: Vec<u8>, masking_key: Option<[u8; 4]>) -> String {
+        match masking_key {
+           Some(key) => {
+                let unmasked: Vec<u8> = payload.iter()
+                    .enumerate()
+                    .map(|(i, val)| val ^ key[i % 4])
+                    .collect();
+
+                String::from_utf8(unmasked).unwrap()
+            },
+            None => String::from_utf8(payload).unwrap()
         }
     }
 }
