@@ -18,7 +18,7 @@ pub mod server {
         }
     }
 
-    pub fn read_from_websocket(stream: &TcpStream) -> Option<Vec<u8>> {
+    pub fn read_from_websocket(stream: &TcpStream) -> Result<Vec<u8>, Error> {
         parser::websocket::parse(stream)
     }
 

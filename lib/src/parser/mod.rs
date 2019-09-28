@@ -1,14 +1,42 @@
 pub mod websocket {
     use std::net::TcpStream;
-    use std::io::{Read, BufReader};
+    use std::io::{Read, BufReader, Error, ErrorKind};
 
-    pub fn parse(stream: &TcpStream) -> Option<Vec<u8>> {
+    use crate::http::websocket::{Opcode, Header};
+
+    pub fn parse(stream: &TcpStream) -> Result<Vec<u8>, Error> {
         let mut reader = BufReader::new(stream);
-        let mut buffer = Vec::new();
+        let mut header_buf = [0; 2];
 
-        match reader.read_to_end(&mut buffer) {
-            Ok(_) => Some(buffer),
-            Err(_) => None
+        match reader.by_ref().take(2).read(&mut header_buf) {
+            Ok(_) => {
+                match parse_header(header_buf) {
+                    Ok(header) => {
+                        println!("{:?}", header);
+                        let mut buffer = header.create_payload_buffer();
+
+                        match reader.read_exact(&mut buffer) {
+                            Ok(_) => Ok(buffer),
+                            Err(err) => Err(err)
+                        }
+                    },
+                    Err(err) => Err(err)
+                }
+            },
+            Err(err) => Err(err)
+        }
+    }
+
+    fn parse_header(header: [u8; 2]) -> Result<Header, Error> {
+        let is_final_frame = (header[0] >> 7) == 1;
+        let opcode = header[0] & 0xF;
+        let is_masked = (header[1] >> 7) == 1;
+        let payload_length = header[1] & 0x7F;
+
+        match opcode {
+            1 => Ok(Header::new(is_final_frame, Opcode::TEXT, is_masked, payload_length)),
+            8 => Ok(Header::new(is_final_frame, Opcode::CLOSE, is_masked, payload_length)),
+            _ => Err(Error::new(ErrorKind::InvalidInput, "Bad opcode"))
         }
     }
 }
@@ -28,8 +56,6 @@ pub mod request {
                 match parse_request_line(req) {
                     Ok(parsed) => {
                         let headers = to_headers(parse_get(reader));
-
-                        println!("{:?}", headers);
 
                         Ok(request::Request::new(parsed,
                                                  headers,
