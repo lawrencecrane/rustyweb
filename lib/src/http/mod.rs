@@ -14,11 +14,25 @@ pub mod response {
         let body = msg.as_bytes();
 
         headers.insert(0, "HTTP/1.1 200 OK".to_string());
-        headers.push(format!("Content-Length: {}\n\n", body.len()));
+        headers.push(format!("Content-Length: {}\r\n\r\n", body.len()));
 
         Response {
-            headers: headers.join("\n").as_bytes().to_vec(),
+            headers: headers.join("\r\n").as_bytes().to_vec(),
             body: body.to_vec()
+        }
+    }
+
+    pub fn websocket(key: String, proto: String) -> Response {
+        let headers = vec!["HTTP/1.1 101 Web Socket Protocol Handshake".to_string(),
+                           "Connection: Upgrade".to_string(),
+                           "Content-Length: 0".to_string(),
+                           format!("Sec-WebSocket-Accept: {}", key),
+                           format!("Sec-WebSocket-Protocol: {}", proto),
+                           "Upgrade: websocket\r\n\r\n".to_string()];
+
+        Response {
+            headers: headers.join("\r\n").as_bytes().to_vec(),
+            body: vec![]
         }
     }
 }
@@ -87,8 +101,18 @@ pub mod request {
 
         pub fn is_websocket_upgrade(&self) -> bool {
             match (self.headers.get("connection"), self.headers.get("upgrade")) {
-                (Some(con), Some(upg)) => con == "upgrade" && upg == "websocket",
+                (Some(con), Some(upg)) =>
+                    con.to_lowercase() == "upgrade" && upg.to_lowercase() == "websocket",
                 (_, _) => false
+            }
+        }
+
+        pub fn get_websocket_protocol(&self) -> String {
+            match self.headers.get("sec-websocket-protocol") {
+                Some(protos) => {
+                    protos.split(",").take(1).collect()
+                },
+                None => "json".to_string()
             }
         }
 
@@ -143,8 +167,40 @@ pub mod request {
         }
 
         #[test]
-        fn test_generate_websocket_accept_value_bad() {
+        fn test_generate_websocket_accept_value_ok2() {
             let mut headers = HashMap::new();
+            headers.insert("sec-websocket-key".to_string(),
+                           "JZSMZ2B02uL4y5/Bgg1tnw==".to_string());
+
+            let request = Request::new(RequestLine::new(Method::GET,
+                                                        "/".to_string(),
+                                                        "".to_string()),
+                                       headers,
+                                       None);
+
+            assert_eq!(request.generate_websocket_accept_value().unwrap(),
+                       "0/NFjjkhrm2G5Yqyl/BWoNY/+AQ=")
+        }
+
+        #[test]
+        fn test_generate_websocket_accept_value_ok3() {
+            let mut headers = HashMap::new();
+            headers.insert("sec-websocket-key".to_string(),
+                           "dGhlIHNhbXBsZSBub25jZQ==".to_string());
+
+            let request = Request::new(RequestLine::new(Method::GET,
+                                                        "/".to_string(),
+                                                        "".to_string()),
+                                       headers,
+                                       None);
+
+            assert_eq!(request.generate_websocket_accept_value().unwrap(),
+                       "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=")
+        }
+
+        #[test]
+        fn test_generate_websocket_accept_value_bad() {
+            let headers = HashMap::new();
 
             let request = Request::new(RequestLine::new(Method::GET,
                                                         "/".to_string(),

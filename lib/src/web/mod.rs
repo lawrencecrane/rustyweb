@@ -1,6 +1,6 @@
 pub mod server {
     use std::net::{TcpListener, TcpStream};
-    use std::io::{Write, BufWriter, BufReader, Error};
+    use std::io::{Write, BufWriter, BufReader, Error, ErrorKind};
     use std::thread;
 
     use crate::http;
@@ -8,10 +8,25 @@ pub mod server {
 
     type ResponderType = fn(&TcpStream, http::request::Request) -> Result<(), Error>;
 
-    pub fn respond(stream: &TcpStream, msg: &str, headers: Vec<String>) -> Result<(), Error> {
+    pub fn upgrade_to_websocket(stream: &TcpStream,
+                                request: http::request::Request) -> Result<(), Error> {
+        match (request.generate_websocket_accept_value(),
+               request.get_websocket_protocol() == "json") {
+            (Some(key), true) =>
+                respond(stream, http::response::websocket(key, "json".to_string())),
+            _ => Err(Error::new(ErrorKind::ConnectionAborted, ""))
+        }
+    }
+
+    pub fn read_from_websocket(stream: &TcpStream) -> Option<Vec<u8>> {
+        parser::websocket::parse(stream)
+    }
+
+    pub fn respond(stream: &TcpStream,
+                   response: http::response::Response) -> Result<(), Error> {
         let mut responder = BufWriter::new(stream);
 
-        match responder.write(&http::response::ok(msg, headers).to_bytes()) {
+        match responder.write(&response.to_bytes()) {
             Ok(_) => Ok(()),
             Err(e) => Err(e)
         }

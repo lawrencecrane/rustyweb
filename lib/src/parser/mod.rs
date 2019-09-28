@@ -1,3 +1,18 @@
+pub mod websocket {
+    use std::net::TcpStream;
+    use std::io::{Read, BufReader};
+
+    pub fn parse(stream: &TcpStream) -> Option<Vec<u8>> {
+        let mut reader = BufReader::new(stream);
+        let mut buffer = Vec::new();
+
+        match reader.read_to_end(&mut buffer) {
+            Ok(_) => Some(buffer),
+            Err(_) => None
+        }
+    }
+}
+
 pub mod request {
     use std::net::TcpStream;
     use std::io::{Read, BufReader, BufRead, Error, ErrorKind};
@@ -13,6 +28,8 @@ pub mod request {
                 match parse_request_line(req) {
                     Ok(parsed) => {
                         let headers = to_headers(parse_get(reader));
+
+                        println!("{:?}", headers);
 
                         Ok(request::Request::new(parsed,
                                                  headers,
@@ -73,7 +90,7 @@ pub mod request {
                 let (key, val) = header.split_at(idx);
 
                 Some((key.trim().to_lowercase().to_string(),
-                      val.replacen(":", "", 1).trim().to_lowercase().to_string()))
+                      val.replacen(":", "", 1).trim().to_string()))
             },
             None => None
         }
@@ -84,7 +101,7 @@ pub mod request {
         use super::*;
 
         const HEADERS: [&str; 5] = ["Host: localhost:8080",
-                                    "Connection: keep-alive",
+                                    "Connection: KEEP-alive",
                                     "Cache-Control: max-age=0",
                                     "Accept: text/html,application/xhtml+xml,application/xml;",
                                     "Accept-Encoding: gzip, deflate, br"];
@@ -93,7 +110,7 @@ pub mod request {
         fn test_to_headers() {
             let mut generated = HashMap::new();
             generated.insert("host".to_string(), "localhost:8080".to_string());
-            generated.insert("connection".to_string(), "keep-alive".to_string());
+            generated.insert("connection".to_string(), "KEEP-alive".to_string());
             generated.insert("cache-control".to_string(), "max-age=0".to_string());
             generated.insert("accept".to_string(),
                              "text/html,application/xhtml+xml,application/xml;".to_string());

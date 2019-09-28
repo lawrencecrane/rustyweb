@@ -1,9 +1,15 @@
-const ws = new WebSocket('ws://localhost:8080');
+const ws = new WebSocket('ws://localhost:8080/ws', 'json');
 
 ws.addEventListener('open', () => {
-  ws.send('Hello from client side');
+  const data = { msg: "Hello from the client side" };
+
+  ws.send(JSON.stringify(data));
 });
 
 ws.addEventListener('message', event => {
-  console.log('Got:', event.data);
+  console.log('Got:', JSON.parse(event.data));
+});
+
+ws.addEventListener('error', event => {
+  console.log(event);
 });
