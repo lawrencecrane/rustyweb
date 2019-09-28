@@ -1,6 +1,4 @@
 pub mod websocket {
-    use std::convert::TryInto;
-
     // * WEBSOCKET OPCODES *
     // %x0 denotes a continuation frame
     // %x1 denotes a text frame
@@ -23,9 +21,9 @@ pub mod websocket {
     #[derive(Debug)]
     pub struct Header {
         is_final_frame: bool,
-        opcode: Opcode,
+        pub opcode: Opcode,
         is_masked: bool,
-        payload_length: u8
+        pub payload_length: u8
     }
 
     impl Header {
@@ -39,10 +37,6 @@ pub mod websocket {
                 is_masked: is_masked,
                 payload_length: payload_length
             }
-        }
-
-        pub fn create_payload_buffer(&self) -> Vec<u8> {
-            vec![0; ((self.payload_length as f32 / 8.0).ceil() as u8).try_into().unwrap()]
         }
     }
 }

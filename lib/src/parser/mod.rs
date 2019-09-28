@@ -1,6 +1,7 @@
 pub mod websocket {
     use std::net::TcpStream;
     use std::io::{Read, BufReader, Error, ErrorKind};
+    use std::convert::TryInto;
 
     use crate::http::websocket::{Opcode, Header};
 
@@ -8,22 +9,44 @@ pub mod websocket {
         let mut reader = BufReader::new(stream);
         let mut header_buf = [0; 2];
 
-        match reader.by_ref().take(2).read(&mut header_buf) {
-            Ok(_) => {
-                match parse_header(header_buf) {
-                    Ok(header) => {
-                        println!("{:?}", header);
-                        let mut buffer = header.create_payload_buffer();
+        reader.by_ref().take(2).read(&mut header_buf).unwrap();
 
-                        match reader.read_exact(&mut buffer) {
-                            Ok(_) => Ok(buffer),
-                            Err(err) => Err(err)
-                        }
-                    },
-                    Err(err) => Err(err)
-                }
+        let header = parse_header(header_buf).unwrap();
+        let payload_length = get_actual_payload_length(&header, &mut reader).unwrap();
+
+        match header.opcode {
+            Opcode::TEXT => {
+                let mut buffer = create_payload_buffer(payload_length);
+                reader.read_exact(&mut buffer).unwrap();
+
+                Ok(buffer)
             },
-            Err(err) => Err(err)
+            // TODO: should not actually be error
+            Opcode::CLOSE => Err(Error::new(ErrorKind::ConnectionRefused, ""))
+        }
+    }
+
+    pub fn create_payload_buffer(payload_length: u64) -> Vec<u8> {
+        vec![0; ((payload_length as f64 / 8.0).ceil() as u8).try_into().unwrap()]
+    }
+
+    fn get_actual_payload_length(header: &Header, reader: &mut BufReader<&TcpStream>)
+                                 -> Result<u64, Error> {
+        match header.payload_length {
+            length if length <= 125 => Ok(length.into()),
+            length if length == 126 => {
+                let mut payload_buf = [0; 2];
+                reader.by_ref().take(2).read(&mut payload_buf).unwrap();
+
+                Ok(u16::from_be_bytes(payload_buf).into())
+            },
+            length if length == 127 => {
+                let mut payload_buf = [0; 8];
+                reader.by_ref().take(8).read(&mut payload_buf).unwrap();
+
+                Ok(u64::from_be_bytes(payload_buf))
+            },
+            _ => Err(Error::new(ErrorKind::InvalidInput, "Invalid payload length"))
         }
     }
 
@@ -34,8 +57,14 @@ pub mod websocket {
         let payload_length = header[1] & 0x7F;
 
         match opcode {
-            1 => Ok(Header::new(is_final_frame, Opcode::TEXT, is_masked, payload_length)),
-            8 => Ok(Header::new(is_final_frame, Opcode::CLOSE, is_masked, payload_length)),
+            1 => Ok(Header::new(is_final_frame,
+                                Opcode::TEXT,
+                                is_masked,
+                                payload_length.into())),
+            8 => Ok(Header::new(is_final_frame,
+                                Opcode::CLOSE,
+                                is_masked,
+                                payload_length)),
             _ => Err(Error::new(ErrorKind::InvalidInput, "Bad opcode"))
         }
     }
