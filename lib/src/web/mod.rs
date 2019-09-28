@@ -2,6 +2,7 @@ pub mod server {
     use std::net::{TcpListener, TcpStream};
     use std::io::{Write, BufWriter, BufReader, Error, ErrorKind};
     use std::thread;
+    use serde_json;
 
     use crate::http;
     use crate::parser;
@@ -18,7 +19,8 @@ pub mod server {
         }
     }
 
-    pub fn read_from_websocket(stream: &TcpStream) -> Result<Option<String>, Error> {
+    pub fn read_from_websocket(stream: &TcpStream)
+                               -> Result<Option<serde_json::Value>, Error> {
         parser::websocket::parse(stream)
     }
 

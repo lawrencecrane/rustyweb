@@ -2,10 +2,11 @@ pub mod websocket {
     use std::net::TcpStream;
     use std::io::{Read, BufReader, Error, ErrorKind};
     use std::convert::TryInto;
+    use serde_json;
 
     use crate::http::websocket::{Opcode, Header, unmask_payload};
 
-    pub fn parse(stream: &TcpStream) -> Result<Option<String>, Error> {
+    pub fn parse(stream: &TcpStream) -> Result<Option<serde_json::Value>, Error> {
         let mut reader = BufReader::new(stream);
         let mut header_buf = [0; 2];
 
@@ -14,6 +15,7 @@ pub mod websocket {
         let header = parse_header(header_buf).unwrap();
         let payload_length = get_actual_payload_length(&header, &mut reader).unwrap();
 
+        // TODO: payload could be in multiple frames...
         match header.opcode {
             Opcode::TEXT => {
                 let masking_key = get_masking_key(&header, &mut reader);

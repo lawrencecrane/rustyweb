@@ -13,3 +13,7 @@ ws.addEventListener('message', event => {
 ws.addEventListener('error', event => {
   console.log(event);
 });
+
+ws.addEventListener('close', () => {
+  console.log('Connection closed');
+});

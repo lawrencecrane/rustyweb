@@ -1,4 +1,6 @@
 pub mod websocket {
+    use serde_json;
+
     // * WEBSOCKET OPCODES *
     // %x0 denotes a continuation frame
     // %x1 denotes a text frame
@@ -40,9 +42,10 @@ pub mod websocket {
         }
     }
 
-    pub fn unmask_payload(payload: Vec<u8>, masking_key: Option<[u8; 4]>) -> String {
-        match masking_key {
-           Some(key) => {
+    pub fn unmask_payload(payload: Vec<u8>, masking_key: Option<[u8; 4]>)
+                          -> serde_json::Value {
+        let json_str = match masking_key {
+            Some(key) => {
                 let unmasked: Vec<u8> = payload.iter()
                     .enumerate()
                     .map(|(i, val)| val ^ key[i % 4])
@@ -50,8 +53,12 @@ pub mod websocket {
 
                 String::from_utf8(unmasked).unwrap()
             },
-            None => String::from_utf8(payload).unwrap()
-        }
+            None => {
+                String::from_utf8(payload).unwrap()
+            }
+        };
+
+        serde_json::from_str(&json_str).unwrap()
     }
 }
 
