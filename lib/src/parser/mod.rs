@@ -41,7 +41,7 @@ pub mod websocket {
         }
     }
 
-    fn get_actual_payload_length(header: &Header, reader: &mut BufReader<&TcpStream>)
+    pub fn get_actual_payload_length(header: &Header, reader: &mut BufReader<&TcpStream>)
                                  -> Result<usize, Error> {
         match header.payload_length {
             length if length <= 125 => Ok(length.into()),
@@ -62,7 +62,7 @@ pub mod websocket {
         }
     }
 
-    fn parse_header(header: [u8; 2]) -> Result<Header, Error> {
+    pub fn parse_header(header: [u8; 2]) -> Result<Header, Error> {
         let is_final_frame = (header[0] >> 7) == 1;
         let opcode = header[0] & 0xF;
         let is_masked = (header[1] >> 7) == 1;

@@ -23,9 +23,9 @@ fn respond(stream: &TcpStream, request: Request) -> Result<(), Error> {
                             response::ok(include_str!("../client/dist/bundle.js"),
                                          headers)),
         ((Method::GET, "/ws"), true) =>
-            server::communicate_via_websocket(stream,
-                                              request,
-                                              server::WebSocketJSONHandler {}),
+            server::websocket_echo_chamber(stream,
+                                           request,
+                                           server::WebSocketJSONHandler {}),
         _ =>
             Err(Error::new(ErrorKind::NotFound, "404"))
     }

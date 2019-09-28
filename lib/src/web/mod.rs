@@ -12,6 +12,8 @@ pub mod server {
 
     pub struct WebSocketJSONHandler {}
 
+    /// Implementation of WebSocketCommunicator that communicates
+    /// through JSON in echo chamber
     impl WebSocketCommunicator<JSON> for WebSocketJSONHandler {
         fn protocol(&self) -> &str{
             "json"
@@ -25,24 +27,35 @@ pub mod server {
                 Err(err) => Err(err)
             }
         }
+
+        fn write(&self, _stream: &TcpStream, msg: JSON) -> Result<(), Error> {
+            println!("{:?}", msg);
+            Ok(())
+        }
     }
 
-    pub trait WebSocketCommunicator<T> where T: std::fmt::Debug {
+    pub trait WebSocketCommunicator<T> {
         fn protocol(&self) -> &str;
         fn read(&self, stream: &TcpStream) -> Result<Option<T>, Error>;
+        fn write(&self, stream: &TcpStream, msg: T) -> Result<(), Error>;
     }
 
-    pub fn communicate_via_websocket<T> (
+    /// Communicate with single client via websocket
+    /// by reading their message and then sending them message
+    pub fn websocket_echo_chamber<T> (
         stream: &TcpStream,
         request: http::request::Request,
         communicator: impl WebSocketCommunicator<T>
-    ) -> Result<(), Error> where T: std::fmt::Debug {
+    ) -> Result<(), Error> {
         upgrade_to_websocket(stream, request, communicator.protocol()).unwrap();
 
         loop {
             match communicator.read(stream) {
                 Ok(Some(msg)) => {
-                    println!("{:?}", msg);
+                    match communicator.write(stream, msg) {
+                        Ok(_) => {},
+                        Err(err) => { break Err(err); }
+                    }
                 },
                 Ok(None) => { break Ok(()); }
                 Err(err) => { break Err(err); }
@@ -65,6 +78,7 @@ pub mod server {
         }
     }
 
+    /// Implementation of responder function that can be used in connect
     pub fn respond(stream: &TcpStream,
                    response: http::response::Response) -> Result<(), Error> {
         let mut responder = BufWriter::new(stream);
@@ -85,6 +99,7 @@ pub mod server {
         }
     }
 
+    /// Read request from client and then pass it to responder
     fn connect(stream: Result<TcpStream, Error>, responder: ResponderType) {
         match stream {
             Ok(stream) => {
