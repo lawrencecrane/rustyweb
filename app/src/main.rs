@@ -36,6 +36,11 @@ fn respond(stream: &TcpStream, request: Request) -> Result<(), Error> {
 
                 // This should not be dependent on reading from websocket,
                 // these should be two different things
+                // => Actually answering to question from user is completely valid use case,
+                //    so this is completely fine
+                // => Other use case would be to send read message "up" and writing from there,
+                //    either to this, or all open websockets
+                // TODO: implement both. Rust's thread::channels' will be natural fit to latter
                 // web::server::write_to_websocket(stream, "Go away!".to_string())
             }
         },
