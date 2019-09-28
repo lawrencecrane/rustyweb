@@ -23,17 +23,16 @@ fn respond(stream: &TcpStream, request: Request) -> Result<(), Error> {
                                  response::ok(include_str!("../client/dist/bundle.js"),
                                               headers)),
         ((Method::GET, "/ws"), true) => {
-            match web::server::upgrade_to_websocket(stream, request) {
-                Ok(ok) => {
-                    // TODO: needs to be while loop until bad opcode or opcode::close
-                    let msg = web::server::read_from_websocket(stream)
-                        .unwrap_or(Vec::new());
+            web::server::upgrade_to_websocket(stream, request).unwrap();
 
-                    println!("{:?}", msg);
-
-                    Ok(ok)
-                },
-                Err(err) => Err(err)
+            loop {
+                match web::server::read_from_websocket(stream) {
+                    Ok(Some(msg)) => {
+                        println!("{:?}", msg);
+                    },
+                    Ok(None) => { break Ok(()); }
+                    Err(err) => { break Err(err); }
+                }
             }
         },
         _ =>

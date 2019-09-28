@@ -5,7 +5,7 @@ pub mod websocket {
 
     use crate::http::websocket::{Opcode, Header};
 
-    pub fn parse(stream: &TcpStream) -> Result<Vec<u8>, Error> {
+    pub fn parse(stream: &TcpStream) -> Result<Option<Vec<u8>>, Error> {
         let mut reader = BufReader::new(stream);
         let mut header_buf = [0; 2];
 
@@ -19,10 +19,9 @@ pub mod websocket {
                 let mut buffer = create_payload_buffer(payload_length);
                 reader.read_exact(&mut buffer).unwrap();
 
-                Ok(buffer)
+                Ok(Some(buffer))
             },
-            // TODO: should not actually be error
-            Opcode::CLOSE => Err(Error::new(ErrorKind::ConnectionRefused, ""))
+            Opcode::CLOSE => Ok(None)
         }
     }
 
