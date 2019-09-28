@@ -7,26 +7,63 @@ pub mod server {
     use crate::http;
     use crate::parser;
 
+    type JSON = serde_json::Value;
     type ResponderType = fn(&TcpStream, http::request::Request) -> Result<(), Error>;
 
-    pub fn upgrade_to_websocket(stream: &TcpStream,
-                                request: http::request::Request) -> Result<(), Error> {
-        match (request.generate_websocket_accept_value(),
-               request.get_websocket_protocol() == "json") {
-            (Some(key), true) =>
-                respond(stream, http::response::websocket(key, "json".to_string())),
-            _ => Err(Error::new(ErrorKind::ConnectionAborted, ""))
+    pub struct WebSocketJSONHandler {}
+
+    impl WebSocketCommunicator<JSON> for WebSocketJSONHandler {
+        fn protocol(&self) -> &str{
+            "json"
+        }
+
+        fn read(&self, stream: &TcpStream) -> Result<Option<JSON>, Error> {
+            match parser::websocket::parse(stream) {
+                Ok(Some(msg)) =>
+                    Ok(Some(serde_json::from_str(&String::from_utf8(msg).unwrap()).unwrap())),
+                Ok(None) => Ok(None),
+                Err(err) => Err(err)
+            }
         }
     }
 
-    pub fn read_from_websocket(stream: &TcpStream)
-                               -> Result<Option<serde_json::Value>, Error> {
-        parser::websocket::parse(stream)
+    pub trait WebSocketCommunicator<T> where T: std::fmt::Debug {
+        fn protocol(&self) -> &str;
+        fn read(&self, stream: &TcpStream) -> Result<Option<T>, Error>;
     }
 
-    // pub fn write_to_websocket(stream: &TcpStream) -> Result<(), Error> {
-    //     // TODO: implement it!
-    // }
+    pub fn communicate_via_websocket<T> (
+        stream: &TcpStream,
+        request: http::request::Request,
+        communicator: impl WebSocketCommunicator<T>
+    ) -> Result<(), Error> where T: std::fmt::Debug {
+        upgrade_to_websocket(stream, request, communicator.protocol()).unwrap();
+
+        loop {
+            match communicator.read(stream) {
+                Ok(Some(msg)) => {
+                    println!("{:?}", msg);
+                },
+                Ok(None) => { break Ok(()); }
+                Err(err) => { break Err(err); }
+            }
+        }
+    }
+
+    fn upgrade_to_websocket(stream: &TcpStream,
+                            request: http::request::Request,
+                            protocol: &str) -> Result<(), Error> {
+        let is_ok = match request.get_websocket_protocol() {
+            Some(protos) => protos.contains(&protocol),
+            None => true
+        };
+
+        match (request.generate_websocket_accept_value(), is_ok) {
+            (Some(key), true) =>
+                respond(stream, http::response::websocket(key, protocol.to_string())),
+            _ => Err(Error::new(ErrorKind::ConnectionAborted, ""))
+        }
+    }
 
     pub fn respond(stream: &TcpStream,
                    response: http::response::Response) -> Result<(), Error> {

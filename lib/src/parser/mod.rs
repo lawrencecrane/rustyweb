@@ -2,11 +2,10 @@ pub mod websocket {
     use std::net::TcpStream;
     use std::io::{Read, BufReader, Error, ErrorKind};
     use std::convert::TryInto;
-    use serde_json;
 
     use crate::http::websocket::{Opcode, Header, unmask_payload};
 
-    pub fn parse(stream: &TcpStream) -> Result<Option<serde_json::Value>, Error> {
+    pub fn parse(stream: &TcpStream) -> Result<Option<Vec<u8>>, Error> {
         let mut reader = BufReader::new(stream);
         let mut header_buf = [0; 2];
 

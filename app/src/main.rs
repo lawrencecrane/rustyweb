@@ -4,10 +4,10 @@ use std::net::TcpStream;
 use std::io::{Error, ErrorKind};
 use rustyweb::http::request::{Request, Method};
 use rustyweb::http::response;
-use rustyweb::web;
+use rustyweb::web::server;
 
 fn main() {
-    web::server::serve("0.0.0.0", 8080, respond)
+    server::serve("0.0.0.0", 8080, respond)
 }
 
 fn respond(stream: &TcpStream, request: Request) -> Result<(), Error> {
@@ -15,35 +15,17 @@ fn respond(stream: &TcpStream, request: Request) -> Result<(), Error> {
 
     match (request.get_method_and_uri(), request.is_websocket_upgrade()) {
         ((Method::GET, "/"), false) =>
-            web::server::respond(stream,
-                                 response::ok(include_str!("../client/dist/index.html"),
-                                              headers)),
+            server::respond(stream,
+                            response::ok(include_str!("../client/dist/index.html"),
+                                         headers)),
         ((Method::GET, "/bundle.js"), false) =>
-            web::server::respond(stream,
-                                 response::ok(include_str!("../client/dist/bundle.js"),
-                                              headers)),
-        ((Method::GET, "/ws"), true) => {
-            web::server::upgrade_to_websocket(stream, request).unwrap();
-
-            loop {
-                match web::server::read_from_websocket(stream) {
-                    Ok(Some(msg)) => {
-                        println!("{:?}", msg);
-                    },
-                    Ok(None) => { break Ok(()); }
-                    Err(err) => { break Err(err); }
-                }
-
-                // This should not be dependent on reading from websocket,
-                // these should be two different things
-                // => Actually answering to question from user is completely valid use case,
-                //    so this is completely fine
-                // => Other use case would be to send read message "up" and writing from there,
-                //    either to this, or all open websockets
-                // TODO: implement both. Rust's thread::channels' will be natural fit to latter
-                // web::server::write_to_websocket(stream, "Go away!".to_string())
-            }
-        },
+            server::respond(stream,
+                            response::ok(include_str!("../client/dist/bundle.js"),
+                                         headers)),
+        ((Method::GET, "/ws"), true) =>
+            server::communicate_via_websocket(stream,
+                                              request,
+                                              server::WebSocketJSONHandler {}),
         _ =>
             Err(Error::new(ErrorKind::NotFound, "404"))
     }
