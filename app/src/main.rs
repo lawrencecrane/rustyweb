@@ -33,6 +33,10 @@ fn respond(stream: &TcpStream, request: Request) -> Result<(), Error> {
                     Ok(None) => { break Ok(()); }
                     Err(err) => { break Err(err); }
                 }
+
+                // This should not be dependent on reading from websocket,
+                // these should be two different things
+                // web::server::write_to_websocket(stream, "Go away!".to_string())
             }
         },
         _ =>

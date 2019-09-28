@@ -24,6 +24,10 @@ pub mod server {
         parser::websocket::parse(stream)
     }
 
+    // pub fn write_to_websocket(stream: &TcpStream) -> Result<(), Error> {
+    //     // TODO: implement it!
+    // }
+
     pub fn respond(stream: &TcpStream,
                    response: http::response::Response) -> Result<(), Error> {
         let mut responder = BufWriter::new(stream);
