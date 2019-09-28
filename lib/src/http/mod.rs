@@ -22,7 +22,7 @@ pub mod websocket {
     pub struct Header {
         is_final_frame: bool,
         pub opcode: Opcode,
-        is_masked: bool,
+        pub is_masked: bool,
         pub payload_length: u8
     }
 

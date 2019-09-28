@@ -16,12 +16,29 @@ pub mod websocket {
 
         match header.opcode {
             Opcode::TEXT => {
+                let masking_key = get_masking_key(&header, &mut reader);
+
+                println!("{:?}", masking_key);
+
                 let mut buffer = create_payload_buffer(payload_length);
                 reader.read_exact(&mut buffer).unwrap();
 
                 Ok(Some(buffer))
             },
             Opcode::CLOSE => Ok(None)
+        }
+    }
+
+    pub fn get_masking_key(header: &Header, reader: &mut BufReader<&TcpStream>)
+                           -> Option<u32> {
+        match header.is_masked {
+            true => {
+                let mut masking_key_buf = [0; 4];
+                reader.take(4).read(&mut masking_key_buf).unwrap();
+
+                Some(u32::from_be_bytes(masking_key_buf))
+            },
+            false => None
         }
     }
 
@@ -35,13 +52,13 @@ pub mod websocket {
             length if length <= 125 => Ok(length.into()),
             length if length == 126 => {
                 let mut payload_buf = [0; 2];
-                reader.by_ref().take(2).read(&mut payload_buf).unwrap();
+                reader.take(2).read(&mut payload_buf).unwrap();
 
                 Ok(u16::from_be_bytes(payload_buf).into())
             },
             length if length == 127 => {
                 let mut payload_buf = [0; 8];
-                reader.by_ref().take(8).read(&mut payload_buf).unwrap();
+                reader.take(8).read(&mut payload_buf).unwrap();
 
                 Ok(u64::from_be_bytes(payload_buf))
             },
