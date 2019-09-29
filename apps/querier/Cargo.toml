@@ -1,0 +1,8 @@
+[package]
+name = "querier"
+version = "0.1.0"
+authors = ["Lauri"]
+edition = "2018"
+
+[dependencies]
+rustyweb = { path = "../../lib" }

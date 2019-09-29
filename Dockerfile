@@ -1,13 +1,13 @@
 #== Image to build client assets ==#
 FROM node:lts-slim as client-builder
 
-WORKDIR /home/client
+WORKDIR /home/client/querier
 
-COPY app/client/package.json .
+COPY apps/querier/client/package.json .
 
 RUN npm install
 
-COPY app/client ./
+COPY apps/querier/client ./
 
 RUN  npm run build
 
@@ -29,11 +29,11 @@ RUN cd /home/rustyweb/lib && cargo build --release
 
 #* Build the app
 COPY lib ./lib/
-COPY app ./app/
+COPY apps ./apps/
 
-COPY --from=client-builder /home/client/dist ./app/client/dist/
+COPY --from=client-builder /home/client/querier/dist ./apps/querier/client/dist/
 
-WORKDIR /home/rustyweb/app
+WORKDIR /home/rustyweb/apps/querier
 
 RUN cargo build --release
 #*
@@ -53,6 +53,6 @@ WORKDIR /opt/rustyweb
 
 ENV PATH "/opt/rustyweb:$PATH"
 
-COPY --from=builder /home/rustyweb/app/target/release/rustywebapp .
+COPY --from=builder /home/rustyweb/apps/querier/target/release/querier .
 
-CMD ["rustywebapp"]
+CMD ["querier"]
