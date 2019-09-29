@@ -1,12 +1,12 @@
 {
-  "name": "rustywebclient",
+  "name": "querierclient",
   "version": "1.0.0",
-  "description": "client code for rustywebapp",
+  "description": "client code for querier",
   "main": "webpack.config.js",
   "scripts": {
     "build": "webpack"
   },
-  "author": "Lauri Kurki",
+  "author": "Lauri",
   "license": "ISC",
   "dependencies": {
   },
