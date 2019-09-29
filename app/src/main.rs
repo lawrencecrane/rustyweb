@@ -17,16 +17,12 @@ fn respond(stream: &TcpStream, request: Request) -> Result<(), Error> {
     match (request.get_method_and_uri(), request.is_websocket_upgrade()) {
         ((Method::GET, "/"), false) =>
             server::respond(stream,
-                            response::ok(include_str!("../client/dist/index.html"),
-                                         headers)),
+                            response::ok(include_str!("../client/dist/index.html"), headers)),
         ((Method::GET, "/bundle.js"), false) =>
             server::respond(stream,
-                            response::ok(include_str!("../client/dist/bundle.js"),
-                                         headers)),
+                            response::ok(include_str!("../client/dist/bundle.js"), headers)),
         ((Method::GET, "/ws"), true) =>
-            server::websocket_echo_chamber(stream,
-                                           request,
-                                           Communicator {}),
+            server::websocket_echo_chamber(stream, request, Communicator {}),
         _ =>
             Err(Error::new(ErrorKind::NotFound, "404"))
     }
