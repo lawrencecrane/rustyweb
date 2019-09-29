@@ -10,12 +10,42 @@ pub mod websocket {
     // %xB-F are reserved for further control frames
     #[derive(Debug)]
     pub enum Opcode {
-        // CONTINUATION,
-        TEXT,
-        // BINARY,
-        CLOSE,
-        // PING,
-        // PONG
+        // CONTINUATION = 0,
+        TEXT = 1,
+        // BINARY = 2,
+        CLOSE = 8,
+        // PING = 9,
+        // PONG = 10
+    }
+
+    pub struct Frame {
+        pub payload: Vec<u8>
+    }
+
+    impl Frame {
+        pub fn new(mut msg: Vec<u8>, opcode: Opcode) -> Frame {
+            let payload = match msg.len() {
+                length if length < 126 => {
+                    let mut header =  vec![128 + opcode as u8, length as u8];
+                    header.append(&mut msg);
+
+                    header
+                },
+                length if length < 65536 => {
+                    let mut header = vec![128 + opcode as u8, 126];
+                    header.append(&mut (msg.len() as u16).to_be_bytes().to_vec());
+                    header.append(&mut msg);
+
+                    header
+                },
+                // TODO: support for payload length == 127 (payload length >= 2^16)
+                _ => panic!()
+            };
+
+            Frame {
+                payload: payload
+            }
+        }
     }
 
     #[derive(Debug)]

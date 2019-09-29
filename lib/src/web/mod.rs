@@ -12,8 +12,7 @@ pub mod server {
 
     pub struct WebSocketJSONHandler {}
 
-    /// Implementation of WebSocketCommunicator that communicates
-    /// through JSON in echo chamber
+    /// Implementation of WebSocketCommunicator that communicates through JSON in echo chamber
     impl WebSocketCommunicator<JSON> for WebSocketJSONHandler {
         fn protocol(&self) -> &str{
             "json"
@@ -28,9 +27,17 @@ pub mod server {
             }
         }
 
-        fn write(&self, _stream: &TcpStream, msg: JSON) -> Result<(), Error> {
+        fn write(&self, stream: &TcpStream, msg: JSON) -> Result<(), Error> {
             println!("{:?}", msg);
-            Ok(())
+            let payload = http::websocket::Frame::new(serde_json::to_vec(&msg).unwrap(),
+                                                      http::websocket::Opcode::TEXT);
+
+            let mut writer = BufWriter::new(stream);
+
+            match writer.write(&payload.payload) {
+                Ok(_) => Ok(()),
+                Err(err) => Err(err)
+            }
         }
     }
 

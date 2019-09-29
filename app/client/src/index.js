@@ -8,6 +8,7 @@ ws.addEventListener('open', () => {
 
 ws.addEventListener('message', event => {
   console.log('Got:', JSON.parse(event.data));
+  ws.close();
 });
 
 ws.addEventListener('error', event => {
