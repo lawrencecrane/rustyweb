@@ -25,6 +25,13 @@ RUN mkdir -p /home/rustyweb/lib/src \
 COPY lib/Cargo* ./lib/
 
 RUN cd /home/rustyweb/lib && cargo build --release
+
+RUN mkdir -p /home/rustyweb/apps/querier/src \
+    && echo "fn main() {}" > /home/rustyweb/apps/querier/src/main.rs
+
+COPY apps/querier/Cargo* ./apps/querier/
+
+RUN cd /home/rustyweb/apps/querier && cargo build --release
 #*
 
 #* Build the app
@@ -35,7 +42,7 @@ COPY --from=client-builder /home/client/querier/dist ./apps/querier/client/dist/
 
 WORKDIR /home/rustyweb/apps/querier
 
-RUN cargo build --release
+RUN rm -rf target/release && cargo build --release
 #*
 
 CMD ["cargo", "build", "--release"]
