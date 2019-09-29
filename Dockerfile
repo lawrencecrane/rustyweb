@@ -1,13 +1,42 @@
+#== Image to build client assets ==#
+FROM node:lts-slim as client-builder
+
+WORKDIR /home/client
+
+COPY app/client/package.json .
+
+RUN npm install
+
+COPY app/client ./
+
+RUN  npm run build
+
 #== Image to build application ==#
 FROM rust:alpine as builder
 
+RUN apk add libc-dev
+
 WORKDIR /home/rustyweb
 
-COPY Cargo.toml .
-COPY Cargo.lock .
-COPY src ./src/
+#* Install dependencies to cache
+RUN mkdir -p /home/rustyweb/lib/src \
+    && touch /home/rustyweb/lib/src/lib.rs
+
+COPY lib/Cargo* ./lib/
+
+RUN cd /home/rustyweb/lib && cargo build --release
+#*
+
+#* Build the app
+COPY lib ./lib/
+COPY app ./app/
+
+COPY --from=client-builder /home/client/dist ./app/client/dist/
+
+WORKDIR /home/rustyweb/app
 
 RUN cargo build --release
+#*
 
 CMD ["cargo", "build", "--release"]
 
@@ -24,6 +53,6 @@ WORKDIR /opt/rustyweb
 
 ENV PATH "/opt/rustyweb:$PATH"
 
-COPY --from=builder /home/rustyweb/target/release/rustyweb .
+COPY --from=builder /home/rustyweb/app/target/release/rustywebapp .
 
-CMD ["rustyweb"]
+CMD ["rustywebapp"]
