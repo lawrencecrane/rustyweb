@@ -2,44 +2,11 @@ pub mod server {
     use std::net::{TcpListener, TcpStream};
     use std::io::{Write, BufWriter, BufReader, Error, ErrorKind};
     use std::thread;
-    use serde_json;
 
     use crate::http;
     use crate::parser;
 
-    type JSON = serde_json::Value;
     type ResponderType = fn(&TcpStream, http::request::Request) -> Result<(), Error>;
-
-    pub struct WebSocketJSONHandler {}
-
-    /// Implementation of WebSocketCommunicator that communicates through JSON in echo chamber
-    impl WebSocketCommunicator<JSON> for WebSocketJSONHandler {
-        fn protocol(&self) -> &str{
-            "json"
-        }
-
-        fn read(&self, stream: &TcpStream) -> Result<Option<JSON>, Error> {
-            match parser::websocket::parse(stream) {
-                Ok(Some(msg)) =>
-                    Ok(Some(serde_json::from_str(&String::from_utf8(msg).unwrap()).unwrap())),
-                Ok(None) => Ok(None),
-                Err(err) => Err(err)
-            }
-        }
-
-        fn write(&self, stream: &TcpStream, msg: JSON) -> Result<(), Error> {
-            println!("{:?}", msg);
-            let payload = http::websocket::Frame::new(serde_json::to_vec(&msg).unwrap(),
-                                                      http::websocket::Opcode::TEXT);
-
-            let mut writer = BufWriter::new(stream);
-
-            match writer.write(&payload.payload) {
-                Ok(_) => Ok(()),
-                Err(err) => Err(err)
-            }
-        }
-    }
 
     pub trait WebSocketCommunicator<T> {
         fn protocol(&self) -> &str;
