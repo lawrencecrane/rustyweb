@@ -61,11 +61,9 @@ pub mod websocket {
 
     /// Communicate with single client via websocket
     /// by reading their message and then sending them message
-    pub fn echo_chamber<T> (
-        stream: &TcpStream,
-        request: http::request::Request,
-        communicator: impl Communicator<T>
-    ) -> Result<(), Error> {
+    pub fn echo_chamber<T> (stream: &TcpStream,
+                            request: http::request::Request,
+                            communicator: impl Communicator<T>) -> Result<(), Error> {
         upgrade(stream, request, communicator.protocol()).unwrap();
 
         loop {
